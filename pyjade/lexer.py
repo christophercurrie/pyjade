@@ -40,6 +40,9 @@ class Lexer(object):
     RE_INDENT_TABS = re.compile(r'^\n(\t*) *')
     RE_INDENT_SPACES = re.compile(r'^\n( *)')
     RE_COLON = re.compile(r'^: *')
+    RE_CASE = re.compile(r'^case +([^\n]+)')
+    RE_WHEN = re.compile(r'^when +([^:\n]+)')
+    RE_DEFAULT = re.compile(r'^default *')
     # RE_ = re.compile(r'')
     def __init__(self,str,**options):
         self.options = options
@@ -183,6 +186,15 @@ class Lexer(object):
 
     def include(self):
         return self.scan(self.RE_INCLUDE, 'include')
+
+    def case(self):
+        return self.scan(self.RE_CASE, 'case')
+
+    def when(self):
+        return self.scan(self.RE_WHEN, 'when')
+
+    def default(self):
+        return self.scan(self.RE_DEFAULT, 'default')
 
     def assignment(self):
         captures = regexec(self.RE_ASSIGNMENT,self.input)
@@ -413,6 +425,9 @@ class Lexer(object):
             or self.pipelessText() \
             or self._yield() \
             or self.doctype() \
+            or self.case() \
+            or self.when() \
+            or self.default() \
             or self.extends() \
             or self.append() \
             or self.prepend() \

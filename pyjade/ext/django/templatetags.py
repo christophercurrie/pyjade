@@ -9,6 +9,7 @@ greater than and less than operators. Some common case examples::
 """
 import unittest
 from django import template
+from django.template.base import TemplateSyntaxError
 from pyjade.runtime import iteration
 
 register = template.Library()
@@ -61,6 +62,49 @@ class Setter(template.Node):
     return ''
 
 register.filter('__pyjade_iter', iteration)
+
+@register.tag(name="__pyjade_case")
+def do_case(parser, token):
+    var = parser.compile_filter(token.contents.split()[-1])
+    cases = []
+    default = None
+
+    def next_block(parser):
+        token = parser.next_token()
+        if token.contents == '__pyjade_endcase':
+            return None, None
+
+        nodelist = parser.parse(('__pyjade_when','__pyjade_default','__pyjade_endcase'))
+        return token, nodelist
+
+    nodelist = parser.parse(('__pyjade_when','__pyjade_default','__pyjade_endcase'))
+    if len(nodelist):
+        raise TemplateSyntaxError("Cannot have content before the first when or default")
+    token, block = next_block(parser)
+    while token:
+        if token.contents == '__pyjade_default':
+            if default:
+                raise TemplateSyntaxError("Cannot have multiple default blocks")
+            default = block
+        else:
+            test = parser.compile_filter(token.contents.split()[-1])
+            cases.append((test,block))
+        token, block = next_block(parser)
+
+    return CaseNode(var, cases, default)
+
+class CaseNode(template.Node):
+    def __init__(self, var, cases, default):
+        self.var = var
+        self.cases = cases
+        self.default = default
+
+    def render(self, context):
+        val = self.var.resolve(context, True)
+        for test, block in self.cases:
+            if val == test.resolve(context, True):
+                return block.render(context)
+        return self.default.render(context) if self.default else None
 
 if __name__ == '__main__':
     unittest.main()

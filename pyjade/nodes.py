@@ -168,3 +168,14 @@ class Text(Node):
 
 	def append(self,node):
 		return self.nodes.append(node)
+
+class Case(Node):
+	def __init__(self,expr,block=None):
+		self.expr = expr
+		self.block = block
+
+	class When(Node):
+		def __init__(self,expr,block):
+			self.expr = expr
+			self.block = block
+			self.debug = False

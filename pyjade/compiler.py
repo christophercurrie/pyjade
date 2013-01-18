@@ -73,6 +73,7 @@ class Compiler(object):
         self.xml = False
         self.mixing = 0
         if 'doctype' in self.options: self.setDoctype(options['doctype'])
+        self.withinCase = False
 
     def compile_top(self):
         return ''
@@ -120,6 +121,21 @@ class Compiler(object):
     def visitBlock(self,block):
         for node in block.nodes:
             self.visit(node)
+
+    def visitCase(self,node):
+        _ = self.withinCase
+        self.withinCase = True
+        self.buffer("{%% __pyjade_case %s %%}"%node.expr)
+        self.visit(node.block)
+        self.buffer("{% __pyjade_endcase %}")
+        self.withinCase = _
+
+    def visitWhen(self,node):
+        if 'default' == node.expr:
+            self.buffer("{% __pyjade_default %}")
+        else:
+            self.buffer("{%% __pyjade_when %s %%}"%node.expr)
+        self.visit(node.block)
 
     def visitCodeBlock(self,block):
         self.buffer('{%% block %s %%}'%block.name)

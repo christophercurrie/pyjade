@@ -98,6 +98,21 @@ class Parser(object):
         else:
             return self.block()
 
+    def parseCase(self):
+        val = self.expect('case').val
+        node = nodes.Case(val)
+        node.line = self.line()
+        node.block = self.block()
+        return node
+
+    def parseWhen(self):
+        val = self.expect('when').val
+        return nodes.Case.When(val, self.parseBlockExpansion())
+
+    def parseDefault(self):
+        self.expect('default')
+        return nodes.Case.When('default', self.parseBlockExpansion())
+
     def parseAssignment(self):
         tok = self.expect('assignment')
         return nodes.Assignment(tok.name,tok.val)
